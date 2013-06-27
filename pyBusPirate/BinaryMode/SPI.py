@@ -21,6 +21,7 @@ along with pyBusPirate.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from .BitBang import *
+import struct
 
 class SPISpeed:
 	_30KHZ = 0b000
@@ -98,3 +99,19 @@ class SPI(BBIO):
 		self.timeout(0.1)
 		return self.response(1, True)
 
+    def write_then_read(self, byte_string, read_size, set_cs=True):
+        write_size = len(byte_string)
+        fmt="<BHH"
+        if set_cs:
+            cmd = struct.pack(fmt, 0x04, write_size, read_size))
+        else:
+            cmd = struct.pack(fmt, 0x05, write_size, read_size))
+        self.port.write(cmd)
+        status = self.response(1, True)
+        if status != "\x01":
+            return (status, "")
+        self.port.write(byte_string)
+        status = self.response(1, True)
+        if status != "\x01":
+            return (status, "")
+        return (status, self.response(read_size, True), )
